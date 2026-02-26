@@ -38,18 +38,19 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            width: 100dvw;
+            height: 100dvh;
             overflow: hidden; /* Prevent scrolling outside the mobile view */
         }
 
         /* --- New Mobile Viewport Wrapper (9:16 Aspect Ratio) --- */
         #mobile-wrapper {
-            position: relative;
+            position: absolute;
             /* Logical size 9:16 */
             width: 576px;
             height: 1024px;
             /* Dynamically scale to fit the actual browser window */
-            transform: scale(min(calc(95vw / 576), calc(95vh / 1024)));
+            transform: scale(min(calc(100dvw / 576), calc(100dvh / 1024)));
             transform-origin: center;
             
             /* Moved original body aesthetics here */
@@ -78,7 +79,7 @@
             #mobile-wrapper {
                 border: none;
                 border-radius: 0;
-                transform: scale(min(calc(100vw / 576), calc(100vh / 1024)));
+                transform: scale(min(calc(100dvw / 576), calc(100dvh / 1024)));
             }
         }
 
