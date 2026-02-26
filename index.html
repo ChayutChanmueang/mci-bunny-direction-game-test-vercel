@@ -49,8 +49,6 @@
             /* Logical size 9:16 */
             width: 576px;
             height: 1024px;
-            /* Dynamically scale to fit the actual browser window */
-            transform: scale(min(calc(100dvw / 576), calc(100dvh / 1024)));
             transform-origin: center;
             
             /* Moved original body aesthetics here */
@@ -79,7 +77,6 @@
             #mobile-wrapper {
                 border: none;
                 border-radius: 0;
-                transform: scale(min(calc(100dvw / 576), calc(100dvh / 1024)));
             }
         }
 
@@ -457,6 +454,16 @@
     <canvas id="confetti"></canvas>
 
     <script>
+        // --- Viewport Scaling ---
+        function updateWrapperScale() {
+            const wrapper = document.getElementById('mobile-wrapper');
+            // Calculates a valid unitless number for the scale to fit the screen
+            const scale = Math.min(window.innerWidth / 576, window.innerHeight / 1024);
+            wrapper.style.transform = `scale(${scale})`;
+        }
+        window.addEventListener('resize', updateWrapperScale);
+        updateWrapperScale(); // Apply scale immediately on load
+
         // --- Game Data ---
         const LEVELS = {
             'easy': {
