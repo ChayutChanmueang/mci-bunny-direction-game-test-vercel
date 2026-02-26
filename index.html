@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>เขาวงกตกระต่ายน้อย (Bunny’s Way Home)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Mali:wght@400;600;700&display=swap');
+
+        :root {
+            /* High Saturation Pastel Palette */
+            --bg-cream: #FDFBF7;
+            --panel-bg: #FFFFFF;
+            --primary-peach: #FFB5A7;
+            --primary-mint: #BAFFC9;
+            --primary-sky: #BAE1FF;
+            --primary-yellow: #FFF2CC;
+            --text-brown: #5D4037;
+            --stroke-color: #D7CCC8;
+            --obstacle-color: #FF9AA2;
+            --shadow-color: rgba(93, 64, 55, 0.1);
+            
+            --cell-size: 60px;
+            --grid-gap: 6px;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* --- Updated Body for Desktop Framing --- */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a; /* Dark background to highlight the phone screen */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden; /* Prevent scrolling outside the mobile view */
+        }
+
+        /* --- New Mobile Viewport Wrapper (9:16 Aspect Ratio) --- */
+        #mobile-wrapper {
+            position: relative;
+            /* Logical size 9:16 */
+            width: 576px;
+            height: 1024px;
+            /* Dynamically scale to fit the actual browser window */
+            transform: scale(min(calc(95vw / 576), calc(95vh / 1024)));
+            transform-origin: center;
+            
+            /* Moved original body aesthetics here */
+            background-color: var(--bg-cream);
+            background-image: radial-gradient(var(--stroke-color) 1px, transparent 1px);
+            background-size: 30px 30px;
+            font-family: 'Mali', sans-serif;
+            color: var(--text-brown);
+            font-size: 24px;
+            line-height: 1.6;
+            
+            /* Phone layout & Bezel */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 14px solid #0f0f0f;
+            border-radius: 48px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.6), inset 0 0 0 4px #222;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        /* Remove bezel styling on very narrow screens (actual phones) */
+        @media (max-width: 600px) {
+            #mobile-wrapper {
+                border: none;
+                border-radius: 0;
+                transform: scale(min(calc(100vw / 576), calc(100vh / 1024)));
+            }
+        }
+
+        /* Paper Cut Panel Style */
+        .panel {
+            background: var(--panel-bg);
+            border: 4px solid var(--stroke-color);
+            border-radius: 24px;
+            box-shadow: 0 8px 0 var(--stroke-color), 0 16px 20px var(--shadow-color);
+            padding: 30px;
+            text-align: center;
+            max-width: 90%;
+            width: 500px;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 42px;
+            margin: 0 0 10px 0;
+            color: var(--primary-peach);
+            text-shadow: 2px 2px 0 var(--stroke-color);
+            line-height: 1.2;
+        }
+
+        p {
+            margin: 0 0 24px 0;
+            font-size: 24px;
+        }
+
+        /* Big Hit Box Buttons */
+        .btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--panel-bg);
+            border: 3px solid var(--stroke-color);
+            border-radius: 20px;
+            box-shadow: 0 6px 0 var(--stroke-color);
+            padding: 16px 24px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            width: 100%;
+            font-family: inherit;
+            color: var(--text-brown);
+            text-decoration: none;
+        }
+
+        .btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 var(--stroke-color);
+        }
+
+        .btn-title {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .btn-desc {
+            font-size: 18px;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+
+        .btn.easy { background: var(--primary-mint); }
+        .btn.medium { background: var(--primary-yellow); }
+        .btn.hard { background: var(--primary-peach); }
+        
+        .btn-action {
+            background: var(--primary-sky);
+            font-size: 28px;
+            font-weight: 700;
+            flex-direction: row;
+            gap: 10px;
+        }
+
+        /* Game Screen */
+        #game-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            padding: 30px 20px;
+            box-sizing: border-box;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 20px;
+            background: var(--panel-bg);
+            border: 3px solid var(--stroke-color);
+            border-radius: 16px;
+            padding: 10px 20px;
+            box-shadow: 0 4px 0 var(--stroke-color);
+        }
+
+        .stars {
+            font-size: 32px;
+            letter-spacing: 4px;
+        }
+
+        /* Grid / Board */
+        .board-container {
+            background: #EFEBE0;
+            border: 4px solid var(--stroke-color);
+            border-radius: 24px;
+            padding: 16px;
+            box-shadow: inset 0 6px 12px rgba(0,0,0,0.06), 0 8px 0 var(--stroke-color);
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        #grid {
+            display: grid;
+            gap: var(--grid-gap);
+            position: relative;
+        }
+
+        .cell {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            position: relative;
+        }
+
+        .cell.path {
+            background: #FFFFFF;
+            border: 2px solid #EAE0C8;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+            cursor: pointer;
+        }
+        
+        .cell.path:hover {
+            background: #F9F6F0;
+        }
+
+        .cell.start {
+            background: var(--primary-mint);
+            border-color: #9DE0B3;
+            box-shadow: 0 4px 0 #9DE0B3;
+        }
+
+        .cell.goal {
+            background: var(--primary-sky);
+            border: 3px dashed #9DBDE0;
+            border-radius: 50%;
+        }
+
+        .cell.obstacle {
+            background: var(--obstacle-color);
+            border-color: #E58A92;
+            box-shadow: 0 4px 0 #E58A92;
+            border-radius: 16px;
+        }
+
+        .cell.empty {
+            background: transparent;
+        }
+
+        /* Placed Signs */
+        .sign-icon {
+            font-size: 36px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Bunny Character */
+        #bunny-pos {
+            position: absolute;
+            width: var(--cell-size);
+            height: var(--cell-size);
+            transition: top 0.4s ease-in-out, left 0.4s ease-in-out;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        #bunny-rot {
+            width: 80%;
+            height: 80%;
+            background: #FFF;
+            border: 3px solid var(--text-brown);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            box-shadow: 0 4px 0 var(--text-brown);
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+        
+        /* Bunny ears */
+        #bunny-rot::before, #bunny-rot::after {
+            content: '';
+            position: absolute;
+            top: -15px;
+            width: 12px;
+            height: 24px;
+            background: #FFF;
+            border: 3px solid var(--text-brown);
+            border-radius: 50% 50% 0 0;
+            z-index: -1;
+        }
+        #bunny-rot::before { left: 4px; transform: rotate(-15deg); }
+        #bunny-rot::after { right: 4px; transform: rotate(15deg); }
+
+        /* Wiggle Animation for hitting wall */
+        @keyframes wiggle {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+        .wiggle { animation: wiggle 0.4s ease; }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            background: var(--panel-bg);
+            padding: 16px;
+            border-radius: 20px;
+            border: 3px solid var(--stroke-color);
+            box-shadow: 0 6px 0 var(--stroke-color);
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 600px;
+        }
+
+        .tool-btn {
+            background: var(--bg-cream);
+            border: 3px solid var(--stroke-color);
+            border-radius: 16px;
+            padding: 10px 16px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 var(--stroke-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: inherit;
+            color: var(--text-brown);
+            transition: all 0.1s;
+        }
+
+        .tool-btn.active {
+            background: var(--primary-yellow);
+            border-color: #E5D5A7;
+            box-shadow: 0 2px 0 #E5D5A7;
+            transform: translateY(2px);
+        }
+
+        /* Modal */
+        #win-modal {
+            display: none;
+            position: absolute; /* Adjusted to Absolute to stick to the mobile screen */
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(253, 251, 247, 0.85);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            border-radius: inherit; /* Curves nicely around the simulated phone corners */
+        }
+
+        /* Confetti Canvas */
+        #confetti {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 90;
+        }
+
+        .controls {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Everything is wrapped in this forced 9:16 mobile container -->
+    <div id="mobile-wrapper">
+        <!-- Main Menu -->
+        <div id="main-menu" class="panel">
+            <h1>เขาวงกตกระต่ายน้อย</h1>
+            <p>วางป้ายบอกทางพากระต่ายกลับหลุมอย่างปลอดภัย!</p>
+            
+            <div class="btn easy" onclick="startGameMode('easy')">
+                <span class="btn-title">ด่านง่าย</span>
+                <span class="btn-desc">เส้นทางสั้นๆ มีทางแยกนิดหน่อย</span>
+            </div>
+            <div class="btn medium" onclick="startGameMode('medium')">
+                <span class="btn-title">ด่านปานกลาง</span>
+                <span class="btn-desc">ซับซ้อนขึ้น ระวังสิ่งกีดขวาง!</span>
+            </div>
+            <div class="btn hard" onclick="startGameMode('hard')">
+                <span class="btn-title">ด่านยาก</span>
+                <span class="btn-desc">แผนที่ใหญ่ ต้องวางแผนให้ดี!</span>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen">
+            <div class="header">
+                <div id="level-name" style="font-weight: bold; font-size: 28px;">ด่านง่าย</div>
+                <div id="stars-display" class="stars">⭐⭐⭐</div>
+            </div>
+
+            <div class="board-container">
+                <div id="grid"></div>
+                <div id="bunny-pos">
+                    <div id="bunny-rot">🐰</div>
+                </div>
+            </div>
+
+            <div class="toolbar">
+                <button class="tool-btn active" onclick="selectTool('left', this)">
+                    <span>↩️</span> เลี้ยวซ้าย
+                </button>
+                <button class="tool-btn" onclick="selectTool('right', this)">
+                    <span>↪️</span> เลี้ยวขวา
+                </button>
+                <button class="tool-btn" onclick="selectTool('straight', this)">
+                    <span>⬆️</span> ตรงไป
+                </button>
+                <button class="tool-btn" onclick="selectTool('delete', this)">
+                    <span>🗑️</span> ลบ
+                </button>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-action" id="action-btn" onclick="togglePlay()">
+                    ▶️ เริ่มเดิน
+                </button>
+                <button class="btn btn-action" style="background: var(--bg-cream);" onclick="resetLevel()">
+                    🔄 เริ่มใหม่
+                </button>
+            </div>
+            <button class="btn" style="margin-top: 16px; background: none; box-shadow: none; border: 2px dashed var(--stroke-color);" onclick="showMenu()">
+                🏠 กลับหน้าหลัก
+            </button>
+        </div>
+
+        <!-- Win Modal -->
+        <div id="win-modal">
+            <div class="panel">
+                <h1>สำเร็จ! 🎉</h1>
+                <p>พากระต่ายกลับหลุมได้แล้ว!</p>
+                <div id="win-stars" class="stars" style="margin-bottom: 24px; font-size: 48px;">⭐⭐⭐</div>
+                <button class="btn btn-action" onclick="showMenu()">
+                    🌟 เล่นด่านอื่น
+                </button>
+            </div>
+        </div>
+    </div> <!-- End mobile-wrapper -->
+
+    <canvas id="confetti"></canvas>
+
+    <script>
+        // --- Game Data ---
+        const LEVELS = {
+            'easy': {
+                name: 'ด่านง่าย',
+                startDir: 1, // 0:Up, 1:Right, 2:Down, 3:Left
+                map: [
+                    ['S', '.', '.', '.'],
+                    [' ', ' ', ' ', '.'],
+                    [' ', ' ', ' ', 'G']
+                ]
+            },
+            'medium': {
+                name: 'ด่านปานกลาง',
+                startDir: 1,
+                map: [
+                    ['S', '.', '.', 'X', ' '],
+                    [' ', ' ', '.', '.', '.'],
+                    [' ', ' ', 'X', ' ', '.'],
+                    [' ', ' ', '.', '.', 'G']
+                ]
+            },
+            'hard': {
+                name: 'ด่านยาก',
+                startDir: 1,
+                map: [
+                    ['S', '.', '.', ' ', ' ', ' ', ' '],
+                    [' ', 'X', '.', '.', '.', 'X', ' '],
+                    [' ', ' ', ' ', 'X', '.', '.', '.'],
+                    [' ', '.', '.', '.', 'X', ' ', '.'],
+                    [' ', '.', 'X', ' ', ' ', ' ', 'G']
+                ]
+            }
+        };
+
+        const SIGN_ICONS = {
+            'left': '↩️',
+            'right': '↪️',
+            'straight': '⬆️'
+        };
+
+        // --- State ---
+        let currentLevelId = 'easy';
+        let levelData = null;
+        let mapGrid = [];
+        let bunny = { x: 0, y: 0, dir: 1 };
+        let startPos = { x: 0, y: 0 };
+        let signs = {}; // "x,y" -> "left" | "right" | "straight"
+        let activeTool = 'left';
+        let isPlaying = false;
+        let gameLoop = null;
+        let stars = 3;
+
+        // --- Audio Context ---
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+            
+            if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'step') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, now);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'bump') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, now);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            } else if (type === 'win') {
+                const freqs = [400, 500, 600, 800];
+                freqs.forEach((f, i) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    o.type = 'sine';
+                    o.frequency.value = f;
+                    g.gain.setValueAtTime(0.1, now + i*0.1);
+                    g.gain.exponentialRampToValueAtTime(0.01, now + i*0.1 + 0.2);
+                    o.start(now + i*0.1);
+                    o.stop(now + i*0.1 + 0.2);
+                });
+            }
+        }
+
+        // --- DOM Elements ---
+        const screens = {
+            menu: document.getElementById('main-menu'),
+            game: document.getElementById('game-screen'),
+            modal: document.getElementById('win-modal')
+        };
+        const gridEl = document.getElementById('grid');
+        const bunnyPosEl = document.getElementById('bunny-pos');
+        const bunnyRotEl = document.getElementById('bunny-rot');
+        const actionBtn = document.getElementById('action-btn');
+        const starsDisplay = document.getElementById('stars-display');
+
+        // --- Core Functions ---
+        function startGameMode(levelId) {
+            initAudio();
+            playSound('click');
+            currentLevelId = levelId;
+            levelData = LEVELS[levelId];
+            screens.menu.style.display = 'none';
+            screens.game.style.display = 'flex';
+            document.getElementById('level-name').innerText = levelData.name;
+            resetLevel();
+        }
+
+        function showMenu() {
+            playSound('click');
+            stopGame();
+            screens.game.style.display = 'none';
+            screens.modal.style.display = 'none';
+            screens.menu.style.display = 'block';
+        }
+
+        function resetLevel() {
+            playSound('click');
+            stopGame();
+            mapGrid = levelData.map;
+            signs = {};
+            stars = 3;
+            updateStars();
+            
+            // Find start position
+            for(let y=0; y<mapGrid.length; y++) {
+                for(let x=0; x<mapGrid[y].length; x++) {
+                    if(mapGrid[y][x] === 'S') {
+                        startPos = {x, y};
+                    }
+                }
+            }
+            
+            resetBunny();
+            renderGrid();
+        }
+
+        function resetBunny() {
+            bunny = { x: startPos.x, y: startPos.y, dir: levelData.startDir };
+            updateBunnyDOM();
+        }
+
+        function renderGrid() {
+            gridEl.innerHTML = '';
+            const rows = mapGrid.length;
+            const cols = mapGrid[0].length;
+            gridEl.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
+            gridEl.style.gridTemplateRows = `repeat(${rows}, var(--cell-size))`;
+
+            for(let y=0; y<rows; y++) {
+                for(let x=0; x<cols; x++) {
+                    const cellType = mapGrid[y][x];
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    
+                    if (cellType === 'S') cell.classList.add('start', 'path');
+                    else if (cellType === 'G') cell.classList.add('goal', 'path');
+                    else if (cellType === '.') cell.classList.add('path');
+                    else if (cellType === 'X') cell.classList.add('obstacle');
+                    else cell.classList.add('empty');
+
+                    if (cell.classList.contains('path') && cellType !== 'S' && cellType !== 'G') {
+                        cell.onclick = () => handleCellClick(x, y);
+                    }
+                    
+                    cell.id = `cell-${x}-${y}`;
+                    gridEl.appendChild(cell);
+                }
+            }
+            renderSigns();
+        }
+
+        function selectTool(tool, btnEl) {
+            playSound('click');
+            activeTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            btnEl.classList.add('active');
+        }
+
+        function handleCellClick(x, y) {
+            if (activeTool === 'delete') {
+                delete signs[`${x},${y}`];
+            } else {
+                signs[`${x},${y}`] = activeTool;
+            }
+            playSound('click');
+            renderSigns();
+        }
+
+        function renderSigns() {
+            // Clear existing signs visually
+            document.querySelectorAll('.sign-icon').forEach(el => el.remove());
+            
+            for (const key in signs) {
+                const [x, y] = key.split(',');
+                const cell = document.getElementById(`cell-${x}-${y}`);
+                if (cell) {
+                    const signEl = document.createElement('div');
+                    signEl.className = 'sign-icon';
+                    signEl.innerText = SIGN_ICONS[signs[key]];
+                    cell.appendChild(signEl);
+                }
+            }
+        }
+
+        function updateBunnyDOM() {
+            // calculate pixel position
+            const cellSize = 60; // match CSS var --cell-size
+            const gap = 6;       // match CSS var --grid-gap
+            const padding = 16;  // match inline padding of board-container
+            
+            bunnyPosEl.style.left = `${padding + bunny.x * (cellSize + gap)}px`;
+            bunnyPosEl.style.top = `${padding + bunny.y * (cellSize + gap)}px`;
+            
+            // Rotation based on dir: 0=Up, 1=Right, 2=Down, 3=Left
+            const rotations = [-90, 0, 90, 180];
+            bunnyRotEl.style.transform = `rotate(${rotations[bunny.dir]}deg)`;
+        }
+
+        function togglePlay() {
+            playSound('click');
+            if (isPlaying) {
+                stopGame();
+            } else {
+                startPlaying();
+            }
+        }
+
+        function startPlaying() {
+            isPlaying = true;
+            actionBtn.innerHTML = '⏹️ หยุด';
+            actionBtn.style.background = 'var(--primary-peach)';
+            resetBunny(); // start from beginning
+            gameLoop = setInterval(gameStep, 500);
+        }
+
+        function stopGame() {
+            isPlaying = false;
+            clearInterval(gameLoop);
+            actionBtn.innerHTML = '▶️ เริ่มเดิน';
+            actionBtn.style.background = 'var(--primary-sky)';
+        }
+
+        function gameStep() {
+            // 1. Read sign on current cell
+            const currentKey = `${bunny.x},${bunny.y}`;
+            if (signs[currentKey]) {
+                const sign = signs[currentKey];
+                if (sign === 'left') {
+                    bunny.dir = (bunny.dir + 3) % 4; // Turn Left relative
+                } else if (sign === 'right') {
+                    bunny.dir = (bunny.dir + 1) % 4; // Turn Right relative
+                }
+                // 'straight' does nothing to dir
+            }
+
+            // 2. Calculate next pos
+            let nx = bunny.x;
+            let ny = bunny.y;
+            if (bunny.dir === 0) ny--;
+            else if (bunny.dir === 1) nx++;
+            else if (bunny.dir === 2) ny++;
+            else if (bunny.dir === 3) nx--;
+
+            // 3. Check boundaries & collision
+            const rows = mapGrid.length;
+            const cols = mapGrid[0].length;
+            
+            let hitWall = false;
+            
+            if (nx < 0 || ny < 0 || ny >= rows || nx >= cols) {
+                hitWall = true;
+            } else {
+                const targetCell = mapGrid[ny][nx];
+                if (targetCell === ' ' || targetCell === 'X') {
+                    hitWall = true;
+                }
+            }
+
+            if (hitWall) {
+                playSound('bump');
+                // turn around
+                bunny.dir = (bunny.dir + 2) % 4;
+                updateBunnyDOM();
+                
+                // wiggle animation
+                bunnyPosEl.classList.remove('wiggle');
+                void bunnyPosEl.offsetWidth; // trigger reflow
+                bunnyPosEl.classList.add('wiggle');
+                
+                // deduct star
+                stars = Math.max(1, stars - 1);
+                updateStars();
+                return; // wait for next tick to move
+            }
+
+            // 4. Move
+            playSound('step');
+            bunny.x = nx;
+            bunny.y = ny;
+            updateBunnyDOM();
+
+            // 5. Check Win
+            if (mapGrid[bunny.y][bunny.x] === 'G') {
+                setTimeout(winGame, 400); // wait for animation
+            }
+        }
+
+        function updateStars() {
+            const s = '⭐'.repeat(stars) + '⬛'.repeat(3 - stars);
+            starsDisplay.innerText = s;
+        }
+
+        function winGame() {
+            stopGame();
+            playSound('win');
+            screens.modal.style.display = 'flex';
+            document.getElementById('win-stars').innerText = '⭐'.repeat(stars);
+            fireConfetti();
+        }
+
+        // --- Simple Confetti ---
+        function fireConfetti() {
+            const canvas = document.getElementById('confetti');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            const pieces = [];
+            const colors = ['#FFB5A7', '#BAFFC9', '#BAE1FF', '#FFF2CC'];
+            
+            for(let i=0; i<100; i++) {
+                pieces.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    w: Math.random() * 10 + 5,
+                    h: Math.random() * 10 + 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    vy: Math.random() * 3 + 2,
+                    vx: Math.random() * 2 - 1,
+                    rot: Math.random() * 360,
+                    rs: Math.random() * 5 - 2.5
+                });
+            }
+
+            let frameId;
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                let active = false;
+                pieces.forEach(p => {
+                    p.y += p.vy;
+                    p.x += p.vx;
+                    p.rot += p.rs;
+                    if(p.y < canvas.height) active = true;
+                    
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rot * Math.PI / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+                    ctx.restore();
+                });
+                
+                if(active) {
+                    frameId = requestAnimationFrame(draw);
+                } else {
+                    ctx.clearRect(0,0, canvas.width, canvas.height);
+                }
+            }
+            draw();
+            
+            // clear after 5 secs
+            setTimeout(() => {
+                cancelAnimationFrame(frameId);
+                ctx.clearRect(0,0, canvas.width, canvas.height);
+            }, 5000);
+        }
+
+        // Initialize UI
+        screens.game.style.display = 'none';
+
+    </script>
+</body>
+</html>
